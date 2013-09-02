@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Twitter Stream Results from Gramener</title>
+</head>
+<body>
+    {{ search_term }}
+    <br>
+    {% for each in search_term %}
+      {{ each }}
+      <br>
+    {% end %}
+</body>
+</html>
