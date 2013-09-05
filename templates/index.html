@@ -9,5 +9,19 @@
         <input type="text" name="q" autocomplete="off" placeholder="Enter query to search"/>
         <input type="submit" value="Search" />
     </form>
+
+    <div id="messages"></div>
+
+    <script src="/static/jquery.min.js"></script>
+    <script>
+    var ws;
+    $('form').on('submit', function(e) {
+        e.preventDefault();
+        ws = new WebSocket('ws://127.0.0.1:8080/search?' + $(this).serialize());
+        ws.onmessage = function(e) {
+            $('<code>').text(e.data).appendTo('#messages');
+        };
+    })
+    </script>
 </body>
 </html>

@@ -2,11 +2,11 @@ from TwitterAPI import TwitterAPI
 
 import tornado.ioloop
 import tornado.web
+import tornado.websocket
 import tornado.options
 from tornado import escape
 
 import os
-import json
 
 # Connect to Twitter Authentication
 import secret_twitter
@@ -24,16 +24,13 @@ class MainHandler(tornado.web.RequestHandler):
 
 
 # Handler which returns the results
-class SearchHandler(tornado.web.RequestHandler):
-
-    def get(self):
+class SearchHandler(tornado.websocket.WebSocketHandler):
+    def open(self):
         search_query = escape.xhtml_escape(self.get_argument('q'))
         if search_query:
             api.request('statuses/filter', {'track': search_query})
-            self.set_header('Content-Type', 'application/json')
             for item in api.get_iterator():
-                self.write(json.dumps(item))
-                self.flush()
+                self.write_message(item)
 
 
 def launcher():
@@ -44,6 +41,7 @@ def launcher():
         debug=True,
         template_path=os.path.join(os.path.dirname(__file__), "templates"),
         xsrf_cookies=True,
+        static_path=os.path.join(os.path.dirname(__file__), "static"),
     )
     application.listen(8080)
     tornado.options.parse_command_line()
