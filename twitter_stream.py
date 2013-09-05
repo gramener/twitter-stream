@@ -8,8 +8,12 @@ from tornado import escape
 import os
 
 # Connect to Twitter Authentication
-api = TwitterAPI(consumer_key, consumer_secret, access_token_key, access_token_secret)
-
+import secret_twitter
+api = TwitterAPI(
+    secret_twitter.consumer_key,
+    secret_twitter.consumer_secret,
+    secret_twitter.access_token_key,
+    secret_twitter.access_token_secret)
 
 # Handler for homepage
 class MainHandler(tornado.web.RequestHandler):
