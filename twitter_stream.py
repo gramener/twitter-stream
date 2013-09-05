@@ -6,6 +6,7 @@ import tornado.options
 from tornado import escape
 
 import os
+import itertools
 
 # Connect to Twitter Authentication
 import secret_twitter
@@ -28,9 +29,11 @@ class SearchHandler(tornado.web.RequestHandler):
     def get(self):
         search_query = escape.xhtml_escape(self.get_argument('q'))
         if search_query:
-            api.request('search/tweets', {'q': search_query})
+            api.request('statuses/filter', {'track': search_query})
             iter = api.get_iterator()
-            self.render("search.html", search_term=iter)
+            self.render("search.html",
+                search_term=itertools.islice(iter, 10),
+                handler=self)
 
 
 def launcher():
