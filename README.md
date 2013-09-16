@@ -16,3 +16,10 @@ Run:
 
 **Note:** You need to use a different [application](https://dev.twitter.com/apps/)
 for each connection
+
+## Log rotation
+
+To keep the tweets file to a manageable size, use [logrotate](http://linuxcommand.org/man_pages/logrotate8.html).
+Edit `logrotate.conf` and run
+
+    logrotate logrotate.conf
