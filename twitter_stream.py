@@ -35,7 +35,8 @@ def search(params):
 
     api.request('statuses/filter', params['search'])
     for item in api.get_iterator():
-        print(item)
+        json.dump(item, sys.stdout, separators=(',', ':'))
+        sys.stdout.write('\n')
         sys.stdout.flush()
 
 if __name__ == '__main__':
