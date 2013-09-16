@@ -1,52 +1,49 @@
+"""
+Print filtered Twitter messages in real-time.
+
+Usage:
+    python twitter_stream.py config.json
+
+config.json must have the following structure:
+
+    {
+        "api": {
+            "consumer_key"        : "...",
+            "consumer_secret"     : "...",
+            "access_token_key"    : "...",
+            "access_token_secret" : "..."
+        },
+        "search": {
+            "track": "keywords"
+        }
+    }
+
+See:
+  - https://dev.twitter.com/apps/ generates parameters for "api"
+  - https://dev.twitter.com/docs/api/1.1/post/statuses/filter for "search"
+"""
+
+import json
 from TwitterAPI import TwitterAPI
 
-import tornado.ioloop
-import tornado.web
-import tornado.websocket
-import tornado.options
-from tornado import escape
+def search(params):
+    api = TwitterAPI(
+        params['api']['consumer_key'],
+        params['api']['consumer_secret'],
+        params['api']['access_token_key'],
+        params['api']['access_token_secret'])
 
-import os
+    api.request('statuses/filter', params['search'])
+    for item in api.get_iterator():
+        print(item)
+        sys.stdout.flush()
 
-# Connect to Twitter Authentication
-import secret_twitter
-api = TwitterAPI(
-    secret_twitter.consumer_key,
-    secret_twitter.consumer_secret,
-    secret_twitter.access_token_key,
-    secret_twitter.access_token_secret)
+if __name__ == '__main__':
+    import sys
 
-# Handler for homepage
-class MainHandler(tornado.web.RequestHandler):
+    if len(sys.argv) <= 1:
+        print __doc__.strip()
+        sys.exit(0)
 
-    def get(self):
-        self.render("index.html")
-
-
-# Handler which returns the results
-class SearchHandler(tornado.websocket.WebSocketHandler):
-    def open(self):
-        search_query = escape.xhtml_escape(self.get_argument('q'))
-        if search_query:
-            api.request('statuses/filter', {'track': search_query})
-            for item in api.get_iterator():
-                self.write_message(item)
-
-
-def launcher():
-    application = tornado.web.Application([
-        (r"/", MainHandler),
-        (r"/search", SearchHandler),
-    ],
-        debug=True,
-        template_path=os.path.join(os.path.dirname(__file__), "templates"),
-        xsrf_cookies=True,
-        static_path=os.path.join(os.path.dirname(__file__), "static"),
-    )
-    application.listen(8080)
-    tornado.options.parse_command_line()
-    tornado.ioloop.IOLoop.instance().start()
-
-
-if __name__ == "__main__":
-    launcher()
+    params = json.load(open(sys.argv[1]))
+    search(params)
