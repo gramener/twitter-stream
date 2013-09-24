@@ -39,12 +39,15 @@ if __name__ == '__main__':
         if user in followers:
             continue
 
-        r = api.request('followers/ids', {'user_id': user})
+        r = api.request('followers/ids', {'user_id': user}).response
         if r.status_code != 200:
             print >>sys.stderr, user, r.content
-            break
 
-        ids = followers[user] = r.json()['ids']
+        js = r.json()
+        if 'ids' in js:
+            ids = followers[user] = js['ids']
+        else:
+            ids = []
 
         limit = r.headers['x-rate-limit-remaining']
         print >>sys.stderr, '%s: %d followers. %s limit' % (
