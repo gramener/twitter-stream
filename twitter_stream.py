@@ -23,6 +23,7 @@ See:
   - https://dev.twitter.com/docs/api/1.1/post/statuses/filter for "search"
 """
 
+import sys
 import json
 from TwitterAPI import TwitterAPI
 
@@ -34,14 +35,13 @@ def search(params):
         params['api']['access_token_secret'])
 
     api.request('statuses/filter', params['search'])
+    out = open(params.get('save'), 'w') if 'save' in params else sys.stdout
     for item in api.get_iterator():
-        json.dump(item, sys.stdout, separators=(',', ':'))
-        sys.stdout.write('\n')
-        sys.stdout.flush()
+        json.dump(item, out, separators=(',', ':'))
+        out.write('\n')
+        out.flush()
 
 if __name__ == '__main__':
-    import sys
-
     if len(sys.argv) <= 1:
         print __doc__.strip()
         sys.exit(0)
