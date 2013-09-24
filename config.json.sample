@@ -8,5 +8,10 @@
     "search": {
         "track": "beer"
     },
-    "save": "tweetfile.json"
+    "save_tweets": "tweetfile.json",
+
+    "followers": {
+        "source": "users.txt",
+        "target": "followers.json"
+    }
 }

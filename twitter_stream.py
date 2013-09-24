@@ -4,22 +4,9 @@ Print filtered Twitter messages in real-time.
 Usage:
     python twitter_stream.py config.json
 
-config.json must have the following structure:
-
-    {
-        "api": {
-            "consumer_key"        : "...",
-            "consumer_secret"     : "...",
-            "access_token_key"    : "...",
-            "access_token_secret" : "..."
-        },
-        "search": {
-            "track": "keywords"
-        }
-    }
-
 See:
-  - https://dev.twitter.com/apps/ generates parameters for "api"
+  - config.json.sample for a sample config.json file
+  - https://dev.twitter.com/apps/ generates parameters for "api" parameters
   - https://dev.twitter.com/docs/api/1.1/post/statuses/filter for "search"
 """
 
@@ -35,7 +22,7 @@ def search(params):
         params['api']['access_token_secret'])
 
     api.request('statuses/filter', params['search'])
-    out = open(params.get('save'), 'w') if 'save' in params else sys.stdout
+    out = open(params['save_tweets'], 'w')
     for item in api.get_iterator():
         json.dump(item, out, separators=(',', ':'))
         out.write('\n')

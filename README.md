@@ -21,6 +21,4 @@ for each connection
 ## Log rotation
 
 To keep the tweets file to a manageable size, use [logrotate](http://linuxcommand.org/man_pages/logrotate8.html).
-Edit `logrotate.conf` and run
-
-    logrotate logrotate.conf
+Edit `logrotate.conf` and link to it from /etc/logrotate.d
