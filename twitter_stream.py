@@ -22,7 +22,7 @@ def search(params):
         params['api']['access_token_secret'])
 
     r = api.request('statuses/filter', params['search'])
-    out = open(params['save_tweets'], 'w')
+    out = open(params['save_tweets'], 'ab')
     for item in r.get_iterator():
         json.dump(item, out, separators=(',', ':'))
         out.write('\n')
