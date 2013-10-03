@@ -12,6 +12,8 @@ import os
 import sys
 import json
 import time
+import gzip
+import pandas as pd
 from TwitterAPI import TwitterAPI
 
 if __name__ == '__main__':
@@ -33,9 +35,16 @@ if __name__ == '__main__':
     if os.path.exists(target):
         followers = json.load(open(target))
 
+    src = params['followers']['source']
+    src = gzip.open(src) if src.endswith('.gz') else open(src)
+    tweets = pd.Series([l for l in src if l.strip()]).apply(json.loads)
+
     r = None
-    for user in open(params['followers']['source']):
-        user = user.strip()
+    for tweet in tweets:
+        if not 'user' in tweet:
+            continue
+
+        user = tweet['user']['id_str']
         if user in followers:
             continue
 
