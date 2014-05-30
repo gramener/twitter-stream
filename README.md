@@ -18,6 +18,21 @@ Run:
 **Note:** You need to use a different [application](https://dev.twitter.com/apps/)
 for each connection
 
+## Followers
+
+You can track the followers' network of the users in a twitter stream. Edit
+the `config.json` file to have a `followers` entry like this:
+
+    "followers": {
+        "source": "tweetfile.json",     // Same as save_tweets
+        "target": "followers.json"      // Desired output file
+    }
+
+
+Then run:
+
+    nohup ./run-followers.sh config.json &
+
 ## Log rotation
 
 To keep the tweets file to a manageable size, use [logrotate](http://linuxcommand.org/man_pages/logrotate8.html).
