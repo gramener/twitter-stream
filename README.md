@@ -31,7 +31,7 @@ the `config.json` file to have a `followers` entry like this:
 
 Then run:
 
-    nohup ./run-followers.sh config.json &
+    nohup ./run_followers.sh config.json &
 
 ## Log rotation
 
