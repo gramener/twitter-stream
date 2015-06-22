@@ -117,11 +117,10 @@ if __name__ == '__main__':
     setup = yaml.load(open(os.path.join(folder, 'config.yaml')))
 
     conn = psycopg2.connect(
-        database=setup.get('dbname'),
+        database=setup.get('database'),
         user=setup.get('user'),
         password=setup.get('password'),
-        host=setup.get('host'),
-    )
+        host=setup.get('host'))
     DB = namedtuple('DB', ['conn', 'cur'])
     db = DB(conn=conn, cur=conn.cursor())
 
@@ -130,5 +129,6 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.create_task(save_tweets(db))
     loop.create_task(run_streams(db))
+    logging.info('Started server')
     loop.run_forever()
     loop.close()

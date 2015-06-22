@@ -7,7 +7,7 @@
 #       postgres=# CREATE USER twitter WITH PASSWORD 'secret';
 #       postgres=# CREATE DATABASE twitter OWNER twitter;
 
-dbname:     twitter     # Name of the database
+database:   twitter     # Name of the database
 user:       twitter     # Database role / user name
 password:   secret      # Database password
 host:       localhost   # Hostname

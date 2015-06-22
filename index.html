@@ -10,11 +10,11 @@ title = 'Track Twitter'
 key = 'twitterstream-conn'
 if key not in DB:
     setup = yaml.load(open('config.yaml'))
-    DB[key] = psycopg2.connect(' '.join([
-        'dbname=%s' % setup['dbname'],
-        'user=%s' % setup['user'] if setup.get('user') else '',
-        'password=%s' % setup['password'] if setup.get('password') else '',
-    ]))
+    DB[key] = psycopg2.connect(
+        database=setup.get('database'),
+        user=setup.get('user'),
+        password=setup.get('password'),
+        host=setup.get('host'))
 conn = DB[key]
 cur = conn.cursor()
 
