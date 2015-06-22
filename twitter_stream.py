@@ -14,6 +14,7 @@ import sys
 import json
 from TwitterAPI import TwitterAPI
 
+
 def search(params):
     api = TwitterAPI(
         params['api']['consumer_key'],

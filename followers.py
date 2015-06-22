@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
     r = None
     for tweet in tweets:
-        if not 'user' in tweet:
+        if 'user' not in tweet:
             continue
 
         user = tweet['user']['id_str']
