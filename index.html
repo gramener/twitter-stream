@@ -1,0 +1,221 @@
+{% code %}
+import json
+import yaml
+import psycopg2
+from six.moves.urllib.parse import quote
+from collections import OrderedDict
+
+title = 'Track Twitter'
+
+key = 'twitterstream-conn'
+if key not in DB:
+    setup = yaml.load(open('config.yaml'))
+    DB[key] = psycopg2.connect(' '.join([
+        'dbname=%s' % setup['dbname'],
+        'user=%s' % setup['user'] if setup.get('user') else '',
+        'password=%s' % setup['password'] if setup.get('password') else '',
+    ]))
+conn = DB[key]
+cur = conn.cursor()
+
+cur.execute('SELECT * FROM config')
+config = OrderedDict(cur.fetchall())
+run_id = args.get('id', [None])[0]
+
+updated_config = None
+if handler.request.method == 'POST':
+    if 'delete' in args:
+        if run_id in config:
+            cur.execute('DELETE FROM config WHERE run_id=%s', (run_id,))
+            handler.redirect('.')
+    else:
+        conf = {}
+        for key in ['consumer_key', 'consumer_secret', 'access_token', 'access_secret']:
+            conf[key] = args.get(key, [''])[0]
+        for key in ['follow', 'track', 'locations']:
+            conf[key] = [val.strip() for val in args.get(key, []) if val.strip()]
+        conf = json.dumps(conf)
+        if run_id in config:
+            cur.execute('UPDATE config SET config=%s WHERE run_id=%s', (conf, run_id))
+            updated_config = 'Updated'
+        else:
+            cur.execute('INSERT INTO config (run_id, config) VALUES(%s, %s)', (run_id, conf))
+            updated_config = 'Added'
+    conn.commit()
+
+cur.execute('SELECT * FROM config')
+config = OrderedDict(cur.fetchall())
+{% end %}<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="utf8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="{{ static_url('/css/bootstrap.v3.min.css') }}">
+  <style>
+  .heading { font-size: 200%; margin-top: 0; }
+  .twitter-param-value { max-width: 15em; display: inline-block; }
+  [data-href] { cursor: pointer; }
+  </style>
+</head><body>
+
+<nav class="navbar navbar-default" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href=".">{{ title }}</a>
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="navbar-collapse">
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="help" data-placement="bottom">Help</a></li>
+      </ul>
+      <div class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search">
+        </div>
+      </div>
+    </div>{# /.navbar-collapse #}
+  </div>{# /.container-fluid #}
+</nav>
+
+<div class="container">
+  {% if not run_id %}
+    {% set summary = pd.read_sql('SELECT run, COUNT(*) AS tweet_count FROM tweets GROUP BY run', conn).set_index('run')['tweet_count'] %}
+    <h1 class="heading">
+      Current trackers
+      <div class="pull-right">
+        <form class="form-inline">
+          <input class="form-control" name="id" placeholder="Name a new tracker">
+          <button class="btn btn-success">Add it</button>
+        </form>
+      </div>
+    </h1>
+    <table class="table table-condensed table-hover">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>What's being monitored now</th>
+          <th>Tweets</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for run_id, conf in config.items() %}
+          <tr data-href="?id={{ quote(run_id) }}">
+            <td><a href="?id={{ quote(run_id) }}">{{ escape(run_id) }}</td>
+            <td>
+              {% for key in ('follow', 'track', 'locations') %}
+                {% if conf.get(key) %}
+                  <p><strong>{{ key.title() }}</strong>: {{ escape(stats.andjoin(conf.get(key))) }}</p>
+                {% end %}
+              {% end %}
+            </td>
+            <td>{{ '{:,d}'.format(summary.get(run_id, 0)) }}</td>
+          </tr>
+        {% end %}
+        {% for run_id, count in summary.iteritems() %}
+          {% if run_id not in config %}
+            <tr>
+              <td><a href="?id={{ quote(run_id) }}">{{ escape(run_id) }}</td>
+              <td>-</td>
+              <td>{{ '{:,d}'.format(summary.get(run_id, 0)) }}</td>
+            </tr>
+          {% end %}
+        {% end %}
+      </tbody>
+    </table>
+  {% else %}
+    {% if updated_config %}
+      <p class="alert alert-success">
+        {{ updated_config }} this tracker
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+      </p>
+    {% end %}
+    {% set run = config.get(run_id, {}) %}
+    {% apply Block.name('field') %}
+      <div class="form-group">
+        <label for="{{! field }}" class="col-sm-3 control-label">{{! name }}</label>
+        <div class="col-sm-9">
+          <input class="form-control" name="{{! field }}" placeholder="{{! desc }}" value="{{! escape(run.get(field, '')) }}">
+        </div>
+      </div>
+    {% end %}
+    {% apply Block.name('fieldlist') %}
+      <div class="form-group">
+        <label for="{{! field }}" class="col-sm-3 control-label">{{! name }}</label>
+        <div class="col-sm-9">
+          {%! for value in run.get(field, []) + [''] %}
+            <p class="param">
+              <input class="form-control input-sm twitter-param-value" name="{{! field }}" placeholder="{{! desc }}" value="{{! escape(value) }}">
+              <button class="btn btn-sm btn-danger del-param"><i class="glyphicon glyphicon-remove"></i></button>
+              <button class="btn btn-sm btn-success add-param"><i class="glyphicon glyphicon-plus"></i></button>
+            </p>
+          {%! end %}
+        </div>
+      </div>
+    {% end %}
+
+    <form class="form-horizontal" role="form" method="POST">
+      <div class="form-group">
+        <p class="col-sm-offset-3 col-sm-9">
+          Visit <a href="https://apps.twitter.com/" target="_blank">apps.twitter.com</a>
+          to create a new Twitter app and fill the details below.
+        </p>
+      </div>
+      {{ Block.run('field', field='consumer_key', name='Consumer key', desc='Twitter consumer key') }}
+      {{ Block.run('field', field='consumer_secret', name='Consumer secret', desc='Twitter consumer secret') }}
+      {{ Block.run('field', field='access_token', name='Access token', desc='Twitter access token') }}
+      {{ Block.run('field', field='access_secret', name='Access token secret', desc='Twitter access token secret') }}
+
+      <div class="form-group">
+        <p class="col-sm-offset-3 col-sm-9">
+          Add details of users, keywords or locations to track.
+          See <a href="https://dev.twitter.com/streaming/reference/post/statuses/filter" target="_blank">Twitter API reference</a>
+        </p>
+      </div>
+      {{ Block.run('fieldlist', field='track', name='Track keywords', desc='Keyword to track') }}
+      {{ Block.run('fieldlist', field='follow', name='Follow users', desc='@username to track') }}
+      {{ Block.run('fieldlist', field='locations', name='Locations', desc='long,lat,long,lat bounding box') }}
+
+      <div class="form-group">
+        <div class="col-sm-offset-3 col-sm-9">
+          <button type="submit" class="btn btn-primary">Submit</button>
+          <button type="submit" name="delete" value="1" class="btn btn-danger btn-sm pull-right">Delete</button>
+        </div>
+      </div>
+    </form>
+  {% end %}
+</div>{# .container #}
+
+<script src="{{ static_url('/js/jquery2.min.js') }}"></script>
+<script src="{{ static_url('/js/bootstrap.v3.min.js') }}"></script>
+<script src="{{ static_url('/js/G.min.js') }}"></script>
+<script>
+$('body')
+  .tooltip({
+    selector: '[title]',
+    container: 'body',
+    html: true
+  })
+  .urlfilter({
+    attr: 'data-href'
+  })
+  .search()
+  .on('click', '.del-param', function(e) {
+    e.preventDefault()
+    var paramcount = $(this).parents('.form-group').find('.param').length
+    if (paramcount > 1)
+      $(this).parents('.param').remove()
+  })
+  .on('click', '.add-param', function(e) {
+    e.preventDefault()
+    var $param = $(this).parents('.param')
+    $param.clone().insertAfter($param).find('input').val('').focus()
+  })
+</script>
+</body></html>

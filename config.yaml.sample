@@ -1,0 +1,20 @@
+# This is the configuration for twitterstream.py.
+# For information on running this app, see README.md
+
+# To create a user and database with name twitter, run:
+#
+#       $ psql -U postgres
+#       postgres=# CREATE USER twitter WITH PASSWORD 'secret';
+#       postgres=# CREATE DATABASE twitter OWNER twitter;
+
+dbname:     twitter     # Name of the database
+user:       twitter     # Database role / user name
+password:   secret      # Database password
+
+
+# Set the default logging level
+# - warning: only warnings and errors
+# - info: also show connect, disconnect, count of tweets (default)
+# - debug: also show stall messages, etc
+
+loglevel:   info

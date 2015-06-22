@@ -31,6 +31,20 @@ datasets.
 A single lightweight app that allows users to source, monitor and download
 Twitter data addresses all of these gaps.
 
+## Setup
+
+- Install [Python 3.4](http://continuum.io/downloads#py34)
+- Install required Python modules on Python 3:
+  `pip install aiohttp oauthlib`. On Windows, you'll need to get
+  [psycopg2](www.lfd.uci.edu/~gohlke/pythonlibs/)
+- Install Postgres
+- Copy `config.yaml.sample` to `config.yaml` and follow the instructions in
+  the file to set up Postgres
+- On the command line, run `python3 twitterstream.py`
+- Install [Gramex](https://learn.gramener.com/docs/server). This requires
+  Python 2
+- Run `python gramex.pyc` from this folder and visit the app
+
 
 ## Design choices
 
@@ -63,3 +77,8 @@ Notes:
 - The `requests` library blocks. We need
    for HTTP, and we might also need
   [aiopg](https://github.com/aio-libs/aiopg) for PostgresSQL.
+
+
+## TODO
+
+- [ ] Postgres partitioning / archival
