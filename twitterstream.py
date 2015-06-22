@@ -67,6 +67,7 @@ def stream_tweets(oauth, run_id, data):
 def save_tweets(db, table='tweets', sleep=1):
     '''Save tweets from queue into database'''
     db.cur.execute('CREATE TABLE IF NOT EXISTS %s (run text, tweet jsonb)' % table)
+    db.conn.commit()
     while True:
         while queue.qsize() == 0:
             yield from asyncio.sleep(sleep)
@@ -83,6 +84,7 @@ def save_tweets(db, table='tweets', sleep=1):
 @asyncio.coroutine
 def run_streams(db, table='config', sleep=10):
     db.cur.execute('CREATE TABLE IF NOT EXISTS %s (run_id text PRIMARY KEY, config jsonb)' % table)
+    db.conn.commit()
     Run = namedtuple('Run', ['task', 'data'])
     runs = {}
     last_modified = 0
@@ -114,11 +116,12 @@ if __name__ == '__main__':
     folder = os.path.dirname(os.path.realpath(__file__))
     setup = yaml.load(open(os.path.join(folder, 'config.yaml')))
 
-    conn = psycopg2.connect(' '.join([
-        'dbname=%s' % setup['dbname'],
-        'user=%s' % setup['user'] if setup.get('user') else '',
-        'password=%s' % setup['password'] if setup.get('password') else '',
-    ]))
+    conn = psycopg2.connect(
+        database=setup.get('dbname'),
+        user=setup.get('user'),
+        password=setup.get('password'),
+        host=setup.get('host'),
+    )
     DB = namedtuple('DB', ['conn', 'cur'])
     db = DB(conn=conn, cur=conn.cursor())
 
