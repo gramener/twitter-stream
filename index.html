@@ -99,8 +99,8 @@ config = OrderedDict(cur.fetchall())
     <table class="table table-condensed table-hover">
       <thead>
         <tr>
-          <th>Name</th>
-          <th>What's being monitored now</th>
+          <th>Tracker</th>
+          <th>What it's monitoring now</th>
           <th>Tweets</th>
         </tr>
       </thead>
@@ -129,7 +129,12 @@ config = OrderedDict(cur.fetchall())
         {% end %}
       </tbody>
     </table>
+
+
   {% else %}
+    <div class="row">
+      <h1 class="heading col-sm-offset-3 col-sm-9">{{ escape(run_id) }}</h1>
+    </div>
     {% if updated_config %}
       <p class="alert alert-success">
         {{ updated_config }} this tracker
@@ -152,8 +157,8 @@ config = OrderedDict(cur.fetchall())
           {%! for value in run.get(field, []) + [''] %}
             <p class="param">
               <input class="form-control input-sm twitter-param-value" name="{{! field }}" placeholder="{{! desc }}" value="{{! escape(value) }}">
-              <button class="btn btn-sm btn-danger del-param"><i class="glyphicon glyphicon-remove"></i></button>
-              <button class="btn btn-sm btn-success add-param"><i class="glyphicon glyphicon-plus"></i></button>
+              <button tabindex="-1" class="btn btn-sm btn-danger del-param"><i class="glyphicon glyphicon-remove"></i></button>
+              <button tabindex="-1" class="btn btn-sm btn-success add-param"><i class="glyphicon glyphicon-plus"></i></button>
             </p>
           {%! end %}
         </div>
