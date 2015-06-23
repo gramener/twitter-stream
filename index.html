@@ -22,7 +22,6 @@ cur.execute('SELECT * FROM config')
 config = OrderedDict(cur.fetchall())
 run_id = args.get('id', [None])[0]
 
-updated_config = None
 if handler.request.method == 'POST':
     if 'delete' in args:
         if run_id in config:
@@ -37,10 +36,10 @@ if handler.request.method == 'POST':
         conf = json.dumps(conf)
         if run_id in config:
             cur.execute('UPDATE config SET config=%s WHERE run_id=%s', (conf, run_id))
-            updated_config = 'Updated'
+            handler.redirect('.')
         else:
             cur.execute('INSERT INTO config (run_id, config) VALUES(%s, %s)', (run_id, conf))
-            updated_config = 'Added'
+            handler.redirect('.')
     conn.commit()
 
 cur.execute('SELECT * FROM config')
@@ -135,12 +134,6 @@ config = OrderedDict(cur.fetchall())
     <div class="row">
       <h1 class="heading col-sm-offset-3 col-sm-9">{{ escape(run_id) }}</h1>
     </div>
-    {% if updated_config %}
-      <p class="alert alert-success">
-        {{ updated_config }} this tracker
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-      </p>
-    {% end %}
     {% set run = config.get(run_id, {}) %}
     {% apply Block.name('field') %}
       <div class="form-group">
@@ -157,8 +150,8 @@ config = OrderedDict(cur.fetchall())
           {%! for value in run.get(field, []) + [''] %}
             <p class="param">
               <input class="form-control input-sm twitter-param-value" name="{{! field }}" placeholder="{{! desc }}" value="{{! escape(value) }}">
-              <button tabindex="-1" class="btn btn-sm btn-danger del-param"><i class="glyphicon glyphicon-remove"></i></button>
-              <button tabindex="-1" class="btn btn-sm btn-success add-param"><i class="glyphicon glyphicon-plus"></i></button>
+              <button type="button" class="btn btn-sm btn-success add-param"><i class="glyphicon glyphicon-plus"></i></button>
+              <button type="button" tabindex="-1" class="btn btn-sm btn-danger del-param"><i class="glyphicon glyphicon-remove"></i></button>
             </p>
           {%! end %}
         </div>
