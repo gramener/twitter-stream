@@ -39,16 +39,6 @@ Twitter data addresses all of these gaps.
   [psycopg2](www.lfd.uci.edu/~gohlke/pythonlibs/)
 - Install PostgreSQL 9.4. 9.4 is required for
   [jsonb](http://www.postgresql.org/docs/9.4/static/datatype-json.html).
-  On [Ubuntu](https://gist.github.com/tamoyal/2ea1fcdf99c819b4e07d):
-
-        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-        sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ precise-pgdg main" >> /etc/apt/sources.list.d/postgresql.list'
-        sudo apt-get update
-        sudo apt-get remove postgresql-9.3
-        sudo apt-get install postgresql-9.4
-        sudo pg_createcluster -d /mnt/disk2/postgres-data 9.4 apps
-        sudo service postgresql start
-
 - Copy `config.yaml.sample` to `config.yaml` and follow the instructions in
   the file to set up Postgres. Specifically, you'll need to set up a database
   and role:
