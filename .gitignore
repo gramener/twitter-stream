@@ -4,6 +4,9 @@ config.yaml
 # Ignore config.json from master branch
 config.json
 
+# Ignore all log files
+*.log
+
 # Ignore all files that generally ought not to be committed into the repo.
 # Never commit sensitive data.
 # Never commit useless files.

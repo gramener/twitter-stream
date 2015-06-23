@@ -14,11 +14,16 @@ host:       localhost   # Hostname
 
 save_every:     5       # seconds between every save to database
 reload_every:   10      # seconds between every reload of user's config
-
+count_every:    60      # seconds between reporting tweet count
 
 # Set the default logging level
 # - warning: only warnings and errors
-# - info: also show connect, disconnect, count of tweets (default)
-# - debug: also show stall messages, etc
+# - info: also show connect, disconnect, periodic count of tweets (default)
+# - debug: also show stall messages, push to data store, etc
 
 loglevel:   info
+
+# Set the filename to log into. (If this is blank, no file log will be produced)
+# Note: only warnings and errors will be logged.
+
+logfile:    twitterstream.log
