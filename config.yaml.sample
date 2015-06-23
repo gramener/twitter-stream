@@ -12,6 +12,9 @@ user:       twitter     # Database role / user name
 password:   secret      # Database password
 host:       localhost   # Hostname
 
+save_every:     5       # seconds between every save to database
+reload_every:   10      # seconds between every reload of user's config
+
 
 # Set the default logging level
 # - warning: only warnings and errors

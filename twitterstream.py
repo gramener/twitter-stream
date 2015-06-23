@@ -64,7 +64,7 @@ def stream_tweets(oauth, run_id, data):
 
 
 @asyncio.coroutine
-def save_tweets(db, table='tweets', sleep=1):
+def save_tweets(db, sleep, table='tweets'):
     '''Save tweets from queue into database'''
     db.cur.execute('CREATE TABLE IF NOT EXISTS %s (run text, tweet jsonb)' % table)
     db.conn.commit()
@@ -82,7 +82,7 @@ def save_tweets(db, table='tweets', sleep=1):
 
 
 @asyncio.coroutine
-def run_streams(db, table='config', sleep=10):
+def run_streams(db, sleep, table='config'):
     db.cur.execute('CREATE TABLE IF NOT EXISTS %s (run_id text PRIMARY KEY, config jsonb)' % table)
     db.conn.commit()
     Run = namedtuple('Run', ['task', 'data'])
@@ -127,8 +127,8 @@ if __name__ == '__main__':
     logging.basicConfig(level=getattr(logging, setup.get('loglevel', 'info').upper(), logging.INFO))
 
     loop = asyncio.get_event_loop()
-    loop.create_task(save_tweets(db))
-    loop.create_task(run_streams(db))
+    loop.create_task(save_tweets(db, sleep=setup.get('save_every', 1)))
+    loop.create_task(run_streams(db, sleep=setup.get('reload_every', 10)))
     logging.info('Started server')
     loop.run_forever()
     loop.close()
