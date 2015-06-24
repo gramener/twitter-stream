@@ -1,11 +1,19 @@
 '''Track Twitter via Streaming API'''
 
+# How this application works
+# --------------------------
+# There are 4 tasks that this app runs in parallel:
+#   - run_streams:          Monitor the config table and runs a stream_tweets task for each config
+#       - stream_tweets:    Use the Twitter Streaming API and writes tweets into queue
+#   - save_tweets:          Save what's on the queue into a data store
+#   - show_counts:          Display count of tweets on the console
+
 import os
 import sys
-import asyncio
-import aiohttp
 import logging
-import psycopg2
+import asyncio              # Requires Python 3.4
+import aiohttp              # 3rd-party asyncio HTTP library
+import psycopg2             # Postgres library
 import traceback
 import oauthlib.oauth1
 from urllib.parse import urlencode
@@ -20,67 +28,8 @@ total_count = Counter()
 
 
 @asyncio.coroutine
-def stream_tweets(oauth, run_id, data):
-    '''Push tweets into queue. That's it.'''
-    url = 'https://stream.twitter.com/1.1/statuses/filter.json'
-    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-    url, headers, data = oauth.sign(url, 'POST', body=data, headers=headers)
-
-    # Reconnection strategy: https://dev.twitter.com/streaming/overview/connecting
-    connection, backoff = False, 0
-    while not connection:
-        response = yield from aiohttp.request('POST', url, data=data, headers=headers)
-        # For recoverable HTTP errors, back off exponentially (from 60s for 420, 5s for rest)
-        if response.status in {420, 429} or response.status >= 500:
-            backoff = backoff * 2 if backoff else 60 if response.status == 420 else 5
-            result = yield from response.read()
-            logger.warning('HTTP %d: %ss retry: %s', response.status, backoff, result)
-            response.close()
-            yield from asyncio.sleep(backoff)
-        # For non-recoverable errors, just give up
-        elif response.status != 200:
-            result = yield from response.read()
-            logger.error('HTTP %d: %s', response.status, result)
-            response.close()
-            return
-        else:
-            connection = True
-
-    logger.info('Connected:%s', run_id)
-    try:
-        reader = response.content
-        while not reader.at_eof():
-            line = yield from reader.readline()
-            if line.strip():
-                yield from queue.put(Event(run_id=run_id, data=line.decode('utf-8')))
-            else:
-                logger.debug('Blank line:%s', run_id)
-    finally:
-        logger.info('Disconnect:%s', run_id)
-        response.close()
-
-
-@asyncio.coroutine
-def save_tweets(db, sleep, table='tweets'):
-    '''Save tweets from queue into database'''
-    db.cur.execute('CREATE TABLE IF NOT EXISTS %s (run text, tweet jsonb)' % table)
-    db.conn.commit()
-    while True:
-        while queue.qsize() == 0:
-            yield from asyncio.sleep(sleep)
-        counter, tweets = Counter(), []
-        for i in range(queue.qsize()):
-            event = queue.get_nowait()
-            counter[event.run_id] += 1
-            tweets.append(db.cur.mogrify('(%s, %s)', (event.run_id, event.data)).decode('utf-8'))
-        total_count.update(counter)
-        logger.debug('Saving:%s', str(counter))
-        db.cur.execute('INSERT INTO %s (run, tweet) VALUES ' % table + ','.join(tweets))
-        db.conn.commit()
-
-
-@asyncio.coroutine
 def run_streams(db, sleep, table='config'):
+    '''Monitor the config table and runs a stream_tweets task for each config'''
     db.cur.execute('CREATE TABLE IF NOT EXISTS %s (run_id text PRIMARY KEY, config jsonb)' % table)
     db.conn.commit()
 
@@ -122,7 +71,68 @@ def run_streams(db, sleep, table='config'):
 
 
 @asyncio.coroutine
-def show_count(sleep):
+def stream_tweets(oauth, run_id, data):
+    '''Use the Twitter Streaming API and writes tweets into queue'''
+    url = 'https://stream.twitter.com/1.1/statuses/filter.json'
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    url, headers, data = oauth.sign(url, 'POST', body=data, headers=headers)
+
+    # Reconnection strategy: https://dev.twitter.com/streaming/overview/connecting
+    connection, backoff = False, 0
+    while not connection:
+        response = yield from aiohttp.request('POST', url, data=data, headers=headers)
+        # For recoverable HTTP errors, back off exponentially (from 60s for 420, 5s for rest)
+        if response.status in {420, 429} or response.status >= 500:
+            backoff = backoff * 2 if backoff else 60 if response.status == 420 else 5
+            result = yield from response.read()
+            logger.warning('HTTP %d: %ss retry: %s', response.status, backoff, result)
+            response.close()
+            yield from asyncio.sleep(backoff)
+        # For non-recoverable errors, just give up
+        elif response.status != 200:
+            result = yield from response.read()
+            logger.error('HTTP %d: %s', response.status, result)
+            response.close()
+            return
+        else:
+            connection = True
+
+    logger.info('Connected:%s', run_id)
+    try:
+        reader = response.content
+        while not reader.at_eof():
+            line = yield from reader.readline()
+            if line.strip():
+                yield from queue.put(Event(run_id=run_id, data=line.decode('utf-8')))
+            else:
+                logger.debug('Blank line:%s', run_id)
+    finally:
+        logger.info('Disconnect:%s', run_id)
+        response.close()
+
+
+@asyncio.coroutine
+def save_tweets(db, sleep, table='tweets'):
+    '''Save what's on the queue into a data store'''
+    db.cur.execute('CREATE TABLE IF NOT EXISTS %s (run text, tweet jsonb)' % table)
+    db.conn.commit()
+    while True:
+        while queue.qsize() == 0:
+            yield from asyncio.sleep(sleep)
+        counter, tweets = Counter(), []
+        for i in range(queue.qsize()):
+            event = queue.get_nowait()
+            counter[event.run_id] += 1
+            tweets.append(db.cur.mogrify('(%s, %s)', (event.run_id, event.data)).decode('utf-8'))
+        total_count.update(counter)
+        logger.debug('Saving:%s', str(counter))
+        db.cur.execute('INSERT INTO %s (run, tweet) VALUES ' % table + ','.join(tweets))
+        db.conn.commit()
+
+
+@asyncio.coroutine
+def show_counts(sleep):
+    '''Display count of tweets on the console'''
     while True:
         logger.info('Tweets:%s', total_count)
         total_count.subtract(total_count)
@@ -156,6 +166,7 @@ if __name__ == '__main__':
     # Set logging level to loglevel in config.yaml. Default to logging.INFO
     logger.setLevel(getattr(logging, setup.get('loglevel', 'info').upper(), logging.INFO))
 
+    # We use a common data store (Postgres) to read config and save tweets
     conn = psycopg2.connect(
         database=setup.get('database'),
         user=setup.get('user'),
@@ -164,13 +175,13 @@ if __name__ == '__main__':
     DB = namedtuple('DB', ['conn', 'cur'])
     db = DB(conn=conn, cur=conn.cursor())
 
+    # Run all the main tasks
+    count_every, reload_every = setup.get('count_every', 60), setup.get('reload_every', 10)
     loop = asyncio.get_event_loop()
     loop.create_task(save_tweets(db, sleep=setup.get('save_every', 1)))
-    loop.create_task(run_streams(db, sleep=setup.get('reload_every', 10)))
-
-    count_every = setup.get('count_every', 60)
-    loop.create_task(show_count(sleep=count_every))
-    logger.info('Started server. Will update tweet count every %ds', count_every)
+    loop.create_task(run_streams(db, sleep=reload_every))
+    loop.create_task(show_counts(sleep=count_every))
+    logger.info('Started. %ds: logging. %ds: reload config', count_every, reload_every)
 
     loop.run_forever()
     loop.close()
