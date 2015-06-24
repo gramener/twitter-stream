@@ -1,10 +1,12 @@
 '''Track Twitter via Streaming API'''
 
 import os
+import sys
 import asyncio
 import aiohttp
 import logging
 import psycopg2
+import traceback
 import oauthlib.oauth1
 from urllib.parse import urlencode
 from collections import namedtuple, Counter
@@ -97,10 +99,17 @@ def run_streams(db, sleep, table='config'):
             oauth = oauthlib.oauth1.Client(
                 conf['consumer_key'], conf['consumer_secret'],
                 conf['access_token'], conf['access_secret'])
-            if run_id in runs and not runs[run_id].task.done():
-                if runs[run_id].data == data:
-                    continue
-                runs[run_id].task.cancel()
+            if run_id in runs:
+                if runs[run_id].task.done():
+                    try:
+                        runs[run_id].task.result()
+                    except Exception as error:
+                        msg = ''.join(traceback.format_exception(*sys.exc_info()))
+                        logger.error('Exception:%s', msg)
+                else:
+                    if runs[run_id].data == data:
+                        continue
+                    runs[run_id].task.cancel()
             logger.info('Running:%s:%s',
                         run_id, {key: val for key, val in conf.items() if key in params and val})
             runs[run_id] = Run(data=data, task=loop.create_task(
