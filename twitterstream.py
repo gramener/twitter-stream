@@ -97,7 +97,7 @@ def run_streams(db, sleep, table='config'):
             oauth = oauthlib.oauth1.Client(
                 conf['consumer_key'], conf['consumer_secret'],
                 conf['access_token'], conf['access_secret'])
-            if run_id in runs:
+            if run_id in runs and not runs[run_id].task.done():
                 if runs[run_id].data == data:
                     continue
                 runs[run_id].task.cancel()
