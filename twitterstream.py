@@ -141,6 +141,7 @@ def show_counts(sleep):
 
 if __name__ == '__main__':
     import yaml
+    import subprocess
 
     folder = os.path.dirname(os.path.realpath(__file__))
     setup = yaml.load(open(os.path.join(folder, 'config.yaml')))
@@ -181,7 +182,14 @@ if __name__ == '__main__':
     loop.create_task(save_tweets(db, sleep=setup.get('save_every', 1)))
     loop.create_task(run_streams(db, sleep=reload_every))
     loop.create_task(show_counts(sleep=count_every))
-    logger.info('Started. %ds: logging. %ds: reload config', count_every, reload_every)
+
+    try:
+        version = subprocess.check_output(['git', 'log', '-1', '--pretty=%h'])
+        version = version.decode('utf-8').strip()
+    except OSError:
+        version = 'unknown (no git)'
+    logger.info('Started version %s. %ds: logging. %ds: reload config',
+                version, count_every, reload_every)
 
     loop.run_forever()
     loop.close()
