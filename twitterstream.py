@@ -158,7 +158,7 @@ if __name__ == '__main__':
     # We'll log everything to console. Just redirect to /dev/null if you don't want
     handler = logging.StreamHandler()
     formatter = logging.Formatter('{asctime}:{name}:{levelname}:{message}',
-                                  datefmt='%H:%M:%S', style='{')
+                                  datefmt='%Y-%m-%d %H:%M:%S', style='{')
     handler.setFormatter(formatter)
     handler.setLevel(logging.DEBUG)
     logger.addHandler(handler)
