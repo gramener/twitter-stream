@@ -2,14 +2,15 @@
 import json
 import yaml
 import psycopg2
+import subprocess
 from six.moves.urllib.parse import quote
 from collections import OrderedDict
 
 title = 'Track Twitter'
 
 key = 'twitterstream-conn'
+setup = DB.open('config.yaml', setup=yaml.load)
 if key not in DB:
-    setup = yaml.load(open('config.yaml'))
     DB[key] = psycopg2.connect(
         database=setup.get('database'),
         user=setup.get('user'),
@@ -54,6 +55,7 @@ config = OrderedDict(cur.fetchall())
   .heading { font-size: 200%; margin-top: 0; }
   .twitter-param-value { max-width: 15em; display: inline-block; }
   .table-summary>tfoot>tr>th { border-top: 2px solid #000; }
+  .log { max-height: 20em; overflow-y: scroll; }
   [data-href] { cursor: pointer; }
   </style>
 </head><body>
@@ -137,6 +139,12 @@ config = OrderedDict(cur.fetchall())
       </tfoot>
     </table>
 
+    {% if 'logfile' in setup %}
+      <h1 class="heading">
+        Recent server logs
+      </h1>
+      <pre class="log">{{ subprocess.check_output(['tail', '-200', setup['logfile']]) }}</pre>
+    {% end %}
 
   {% else %}{# Show specific run_id page #}
     <div class="row">
@@ -223,5 +231,7 @@ $('body')
     var $param = $(this).parents('.param')
     $param.clone().insertAfter($param).find('input').val('').focus()
   })
+// Scroll to the bottom of the log by default
+$('.log').scrollTop(99999)
 </script>
 </body></html>
