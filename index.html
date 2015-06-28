@@ -19,10 +19,27 @@ if key not in DB:
 conn = DB[key]
 cur = conn.cursor()
 
-cur.execute('SELECT * FROM config')
-config = OrderedDict(cur.fetchall())
 run_id = args.get('id', [None])[0]
 
+# If a ?download=nnn is specified, download nnn rows as CSV
+if 'download' in args:
+    limit = int((args['download'] or ['1000'])[0])
+    handler.set_header('Content-Type', 'text/csv')
+    if run_id:
+        result = pd.read_sql('SELECT tweets FROM tweets WHERE run=%s LIMIT %s', conn, params=(run_id, limit))
+        handler.set_header('Content-Disposition', 'attachment; filename=%s.csv' % run_id)
+    else:
+        result = pd.read_sql('SELECT tweets FROM tweets LIMIT %s', conn, params=(limit,))
+        handler.set_header('Content-Disposition', 'attachment; filename=tweets.csv')
+    buf = StringIO()
+    result.to_csv(buf, index=False)
+    return buf.getvalue()
+
+# Load configuration
+cur.execute('SELECT * FROM config')
+config = OrderedDict(cur.fetchall())
+
+# Handle configuration changes
 if handler.request.method == 'POST':
     if 'delete' in args:
         if run_id in config:
@@ -103,7 +120,7 @@ config = OrderedDict(cur.fetchall())
         <tr>
           <th>Tracker</th>
           <th>What it's monitoring now</th>
-          <th>Tweets</th>
+          <th colspan="2">Tweets</th>
         </tr>
       </thead>
       <tbody>
@@ -118,6 +135,7 @@ config = OrderedDict(cur.fetchall())
               {% end %}
             </td>
             <td>{{ '{:,d}'.format(summary.get(run_id, 0)) }}</td>
+            <td><a href="?download=1000&amp;id={{ quote(run_id) }}" class="no-filter"><i class="glyphicon glyphicon-download-alt"></i></a></td>
           </tr>
         {% end %}
         {% for run_id, count in summary.iteritems() %}
@@ -126,6 +144,7 @@ config = OrderedDict(cur.fetchall())
               <td><a href="?id={{ quote(run_id) }}">{{ escape(run_id) }}</td>
               <td>-</td>
               <td>{{ '{:,d}'.format(summary.get(run_id, 0)) }}</td>
+              <td><a href="?download=1000&amp;id={{ quote(run_id) }}" class="no-filter"><i class="glyphicon glyphicon-download-alt"></i></a></td>
             </tr>
           {% end %}
         {% end %}
@@ -135,6 +154,7 @@ config = OrderedDict(cur.fetchall())
           <th>Total</th>
           <th></th>
           <th>{{ '{:,d}'.format(summary.sum()) }}</th>
+          <th><a href="?download=1000" class="no-filter"><i class="glyphicon glyphicon-download-alt"></i></a></th>
         </tr>
       </tfoot>
     </table>
@@ -220,6 +240,9 @@ $('body')
     attr: 'data-href'
   })
   .search()
+  .on('click', '.no-filter', function(e) {
+    e.stopPropagation()
+  })
   .on('click', '.del-param', function(e) {
     e.preventDefault()
     var paramcount = $(this).parents('.form-group').find('.param').length
