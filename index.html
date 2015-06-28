@@ -53,6 +53,7 @@ config = OrderedDict(cur.fetchall())
   <style>
   .heading { font-size: 200%; margin-top: 0; }
   .twitter-param-value { max-width: 15em; display: inline-block; }
+  .table-summary>tfoot>tr>th { border-top: 2px solid #000; }
   [data-href] { cursor: pointer; }
   </style>
 </head><body>
@@ -95,7 +96,7 @@ config = OrderedDict(cur.fetchall())
         </form>
       </div>
     </h1>
-    <table class="table table-condensed table-hover">
+    <table class="table table-condensed table-hover table-summary">
       <thead>
         <tr>
           <th>Tracker</th>
@@ -127,10 +128,17 @@ config = OrderedDict(cur.fetchall())
           {% end %}
         {% end %}
       </tbody>
+      <tfoot>
+        <tr>
+          <th>Total</th>
+          <th></th>
+          <th>{{ '{:,d}'.format(summary.sum()) }}</th>
+        </tr>
+      </tfoot>
     </table>
 
 
-  {% else %}
+  {% else %}{# Show specific run_id page #}
     <div class="row">
       <h1 class="heading col-sm-offset-3 col-sm-9">{{ escape(run_id) }}</h1>
     </div>
