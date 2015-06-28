@@ -161,26 +161,24 @@ if __name__ == '__main__':
     folder = os.path.dirname(os.path.realpath(__file__))
     setup = yaml.load(open(os.path.join(folder, 'config.yaml')))
 
-    # We'll log WARNINGS into max 2MB log files called twitterstream.log.
+    # We'll log into max 2MB log files called twitterstream.log.
     # Up to 10 archives will be created: twitterstream.log.1, twitterstream.log.2
+    formatter = logging.Formatter('{asctime}:{name}:{levelname}:{message}',
+                                  datefmt='%Y-%m-%d %H:%M:%S', style='{')
     if 'logfile' in setup:
         handler = RotatingFileHandler(filename=setup['logfile'], maxBytes=2000000, backupCount=10)
-        handler.setLevel(logging.WARNING)
-        formatter = logging.Formatter('{asctime},{levelname:8s},"{message}"',
-                                      datefmt='%Y-%M-%d %H:%M:%S', style='{')
+        handler.setLevel(getattr(logging, setup.get('loglevel', 'info').upper(), logging.INFO))
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
-    # We'll log everything to console. Just redirect to /dev/null if you don't want
+    # Also log DEBUG to console. Just redirect to /dev/null if you don't want
     handler = logging.StreamHandler()
-    formatter = logging.Formatter('{asctime}:{name}:{levelname}:{message}',
-                                  datefmt='%Y-%m-%d %H:%M:%S', style='{')
     handler.setFormatter(formatter)
     handler.setLevel(logging.DEBUG)
     logger.addHandler(handler)
 
     # Set logging level to loglevel in config.yaml. Default to logging.INFO
-    logger.setLevel(getattr(logging, setup.get('loglevel', 'info').upper(), logging.INFO))
+    logger.setLevel(logging.DEBUG)
 
     # We use a common data store (Postgres) to read config and save tweets
     conn = psycopg2.connect(
