@@ -27,6 +27,11 @@ Event = namedtuple('Event', ['run_id', 'data'])
 total_count = Counter()
 
 
+def log_error(msgtype):
+    msg = ''.join(traceback.format_exception(*sys.exc_info()))
+    logger.error('%s:%s', msgtype, msg)
+
+
 @asyncio.coroutine
 def run_streams(db, sleep, table='config'):
     '''Monitor the config table and runs a stream_tweets task for each config'''
@@ -53,8 +58,7 @@ def run_streams(db, sleep, table='config'):
                     try:
                         runs[run_id].task.result()
                     except Exception as error:
-                        msg = ''.join(traceback.format_exception(*sys.exc_info()))
-                        logger.error('Exception:%s', msg)
+                        log_error('stream_tweets')
                 else:
                     if runs[run_id].data == data:
                         continue
@@ -123,11 +127,22 @@ def save_tweets(db, sleep, table='tweets'):
         for i in range(queue.qsize()):
             event = queue.get_nowait()
             counter[event.run_id] += 1
-            tweets.append(db.cur.mogrify('(%s, %s)', (event.run_id, event.data)).decode('utf-8'))
+            # jsonb does not support \u0000, so remove it.
+            # http://www.postgresql.org/docs/9.4/static/datatype-json.html
+            data = event.data.replace('\u0000', '')
+            try:
+                tweets.append(db.cur.mogrify('(%s, %s)', (event.run_id, data)).decode('utf-8'))
+            except psycopg2.Error:
+                log_error('Postgres:db.cur.modify')
         total_count.update(counter)
         logger.debug('Saving:%s', str(counter))
-        db.cur.execute('INSERT INTO %s (run, tweet) VALUES ' % table + ','.join(tweets))
-        db.conn.commit()
+        try:
+            db.cur.execute('INSERT INTO %s (run, tweet) VALUES ' % table + ','.join(tweets))
+        except psycopg2.Error as e:
+            log_error('Postgres:db.cur.execute:')
+            db.conn.rollback()
+        else:
+            db.conn.commit()
 
 
 @asyncio.coroutine
