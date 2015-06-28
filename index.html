@@ -55,7 +55,7 @@ config = OrderedDict(cur.fetchall())
   .heading { font-size: 200%; margin-top: 0; }
   .twitter-param-value { max-width: 15em; display: inline-block; }
   .table-summary>tfoot>tr>th { border-top: 2px solid #000; }
-  .log { max-height: 20em; overflow-y: scroll; }
+  .log { display: block; height: 20em; width: 100%; white-space: nowrap; font-family: Consolas, monospace; background-color: #fff; }
   [data-href] { cursor: pointer; }
   </style>
 </head><body>
@@ -143,7 +143,7 @@ config = OrderedDict(cur.fetchall())
       <h1 class="heading">
         Recent server logs
       </h1>
-      <pre class="log">{{ subprocess.check_output(['tail', '-200', setup['logfile']]) }}</pre>
+      <textarea class="log" disabled>{{ subprocess.check_output(['tail', '-200', setup['logfile']]) }}</textarea>
     {% end %}
 
   {% else %}{# Show specific run_id page #}
