@@ -44,7 +44,7 @@ def run_streams(db, sleep, table='config'):
     runs = {}
     last_modified = 0
     while True:
-        db.cur.execute('SELECT * FROM %s' % table)
+        db.cur.execute('SELECT run_id, config FROM %s' % table)
         config = dict(db.cur.fetchall())
         for run_id, conf in config.items():
             data = urlencode([
