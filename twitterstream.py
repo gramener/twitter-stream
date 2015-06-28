@@ -201,7 +201,7 @@ if __name__ == '__main__':
         version = version.decode('utf-8').strip()
     except OSError:
         version = 'unknown (no git)'
-    logger.info('Started version %s. %ds: logging. %ds: reload config',
+    logger.info('Started version %s. Logging every %ds. Reload config every %ds',
                 version, count_every, reload_every)
 
     loop.run_forever()
