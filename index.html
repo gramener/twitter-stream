@@ -36,13 +36,12 @@ if 'download' in args:
     return buf.getvalue()
 
 # Load configuration
-cur.execute('SELECT * FROM config')
-config = OrderedDict(cur.fetchall())
+config = pd.read_sql('SELECT * FROM config', conn).set_index('run_id')
 
 # Handle configuration changes
 if handler.request.method == 'POST':
     if 'delete' in args:
-        if run_id in config:
+        if run_id in config.index:
             cur.execute('DELETE FROM config WHERE run_id=%s', (run_id,))
             handler.redirect('.')
     else:
@@ -52,16 +51,13 @@ if handler.request.method == 'POST':
         for key in ['follow', 'track', 'locations']:
             conf[key] = [val.strip() for val in args.get(key, []) if val.strip()]
         conf = json.dumps(conf)
-        if run_id in config:
+        if run_id in config.index:
             cur.execute('UPDATE config SET config=%s WHERE run_id=%s', (conf, run_id))
             handler.redirect('.')
         else:
             cur.execute('INSERT INTO config (run_id, config) VALUES(%s, %s)', (run_id, conf))
             handler.redirect('.')
     conn.commit()
-
-cur.execute('SELECT * FROM config')
-config = OrderedDict(cur.fetchall())
 {% end %}<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="utf8">
@@ -124,7 +120,8 @@ config = OrderedDict(cur.fetchall())
         </tr>
       </thead>
       <tbody>
-        {% for run_id, conf in config.items() %}
+        {% for run_id, row in config.iterrows() %}
+          {% set conf = row.config %}
           <tr data-href="?id={{ quote(run_id) }}">
             <td><a href="?id={{ quote(run_id) }}">{{ escape(run_id) }}</td>
             <td>
@@ -170,7 +167,7 @@ config = OrderedDict(cur.fetchall())
     <div class="row">
       <h1 class="heading col-sm-offset-3 col-sm-9">{{ escape(run_id) }}</h1>
     </div>
-    {% set run = config.get(run_id, {}) %}
+    {% set run = config.config.get(run_id, {}) %}
     {% apply Block.name('field') %}
       <div class="form-group">
         <label for="{{! field }}" class="col-sm-3 control-label">{{! name }}</label>

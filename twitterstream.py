@@ -35,7 +35,8 @@ def log_error(msgtype):
 @asyncio.coroutine
 def run_streams(db, sleep, table='config'):
     '''Monitor the config table and runs a stream_tweets task for each config'''
-    db.cur.execute('CREATE TABLE IF NOT EXISTS %s (run_id text PRIMARY KEY, config jsonb)' % table)
+    db.cur.execute('CREATE TABLE IF NOT EXISTS %s '
+                   '(run_id text PRIMARY KEY, config jsonb, meta jsonb)' % table)
     db.conn.commit()
 
     Run = namedtuple('Run', ['task', 'data'])
@@ -108,8 +109,6 @@ def stream_tweets(oauth, run_id, data):
             line = yield from reader.readline()
             if line.strip():
                 yield from queue.put(Event(run_id=run_id, data=line.decode('utf-8')))
-            else:
-                logger.debug('Blank line:%s', run_id)
     finally:
         logger.info('Disconnect:%s', run_id)
         response.close()
@@ -118,7 +117,8 @@ def stream_tweets(oauth, run_id, data):
 @asyncio.coroutine
 def save_tweets(db, sleep, table='tweets'):
     '''Save what's on the queue into a data store'''
-    db.cur.execute('CREATE TABLE IF NOT EXISTS %s (run text, tweet jsonb)' % table)
+    db.cur.execute('CREATE TABLE IF NOT EXISTS %s '
+                   '(id serial PRIMARY KEY, run text, tweet jsonb, meta jsonb)' % table)
     db.conn.commit()
     while True:
         while queue.qsize() == 0:
@@ -171,10 +171,10 @@ if __name__ == '__main__':
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
-    # Also log DEBUG to console. Just redirect to /dev/null if you don't want
+    # Also log INFO to console. Just redirect to /dev/null if you don't want
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)
-    handler.setLevel(logging.DEBUG)
+    handler.setLevel(logging.INFO)
     logger.addHandler(handler)
 
     # Set logging level to loglevel in config.yaml. Default to logging.INFO
