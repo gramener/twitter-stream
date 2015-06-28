@@ -136,7 +136,7 @@ if handler.request.method == 'POST':
           </tr>
         {% end %}
         {% for run_id, count in summary.iteritems() %}
-          {% if run_id not in config %}
+          {% if run_id not in config.index %}
             <tr>
               <td><a href="?id={{ quote(run_id) }}">{{ escape(run_id) }}</td>
               <td>-</td>
