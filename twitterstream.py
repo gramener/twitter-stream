@@ -127,9 +127,9 @@ def save_tweets(db, sleep, table='tweets'):
         for i in range(queue.qsize()):
             event = queue.get_nowait()
             counter[event.run_id] += 1
-            # jsonb does not support \u0000, so remove it.
+            # jsonb does not support "\\u0000", so remove it.
             # http://www.postgresql.org/docs/9.4/static/datatype-json.html
-            data = event.data.replace('\u0000', '')
+            data = event.data.replace('\\u0000', '')
             try:
                 tweets.append(db.cur.mogrify('(%s, %s)', (event.run_id, data)).decode('utf-8'))
             except psycopg2.Error:
