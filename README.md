@@ -52,6 +52,10 @@ Twitter data addresses all of these gaps.
   Python 2
 - Run `python gramex.pyc` from this folder and visit the app
 
+When debugging, connect to the Postgres server via:
+
+    $ psql -h localhost -U twitter --password twitter
+
 
 ## Design choices
 
