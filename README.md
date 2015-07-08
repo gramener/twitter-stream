@@ -93,3 +93,6 @@ Notes:
 ## TODO
 
 - [ ] Postgres partitioning / archival
+- [ ] Add sentiment processing
+- [ ] Parse Facebook as well
+- [ ] History of settings so that we know when a keyword was added / deleted, by whom, etc
